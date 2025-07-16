@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Simulácia: Hrať a Chatovať</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome pre ikony (napr. pre sidebar) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Základné štýly pre telo stránky */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #1a1a2e; /* Tmavé pozadie */
+            color: #e0e0e0; /* Svetlý text */
+            display: flex; /* Použijeme flexbox pre hlavné usporiadanie */
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* Bočný panel (sidebar) */
+        .sidebar {
+            width: 70px; /* Užšia šírka pre ikony */
+            background-color: #20203a; /* Tmavšie pozadie pre sidebar */
+            padding: 15px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.2);
+            position: sticky; /* Sticky pre prilepenie pri scrollovaní */
+            top: 0;
+            height: 100vh; /* Celá výška viewportu */
+            box-sizing: border-box;
+            z-index: 10; /* Aby bol nad obsahom */
+        }
+
+        .sidebar-icon {
+            color: #8be9fd;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .sidebar-icon:hover {
+            background-color: #3a3a5a;
+            color: #50fa7b;
+        }
+
+        /* Hlavný kontajner obsahu */
+        .main-content-wrapper {
+            flex-grow: 1; /* Zaberá zvyšný priestor */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .container {
+            background-color: #2a2a4a;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            padding: 30px;
+            width: 100%; /* Zaberá celú šírku v rámci main-content-wrapper */
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            box-sizing: border-box;
+        }
+
+        /* Hlavička stránky */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #8be9fd;
+        }
+
+        h1, h2 {
+            color: #6272a4;
+            margin-top: 0;
+        }
+
+        /* Sekcia chatu */
+        .chat-section {
+            background-color: #3a3a5a;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Okno chatu */
+        .chat-window {
+            height: 450px; /* Zvýšená výška pre zobrazenie obrázkov/kódu */
+            overflow-y: auto;
+            border: 1px solid #444;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #2b2b4b;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        /* Správy v chate */
+        .message {
+            padding: 10px 15px;
+            border-radius: 20px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        /* Správa od používateľa */
+        .user-message {
+            align-self: flex-end;
+            background-color: #50fa7b;
+            color: #1a1a2e;
+        }
+
+        /* Správa od AI */
+        .ai-message {
+            align-self: flex-start;
+            background-color: #bd93f9;
+            color: #1a1a2e;
+        }
+
+        /* Vstup pre chat */
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Vstupné polia pre text */
+        .chat-input input[type="text"] {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background-color: #3a3a5a;
+            color: #e0e0e0;
+            outline: none;
+        }
+
+        /* Tlačidlá */
+        .chat-input button {
+            padding: 10px 20px;
+            background-color: #8be9fd;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        /* Efekt hover pre tlačidlá */
+        .chat-input button:hover {
+            background-color: #50fa7b;
+        }
+
+        /* Štýl pre obrázky v chate */
+        .chat-window .message img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 5px;
+            margin-top: 5px; /* Priestor medzi textom a obrázkom */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Štýly pre kód v chate */
+        .chat-window .message pre {
+            background-color: #1e1e2e; /* Tmavšie pozadie pre blok kódu */
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap; /* Zachováva medzery a zalamuje riadky */
+            word-break: break-all; /* Zalamuje slová, aby sa predišlo pretečeniu */
+            margin-top: 5px; /* Priestor medzi textom a kódom */
+        }
+
+        .chat-window .message code {
+            font-family: 'Consolas', 'Monaco', 'Courier New', monospace; /* Monospace písmo pre kód */
+            font-size: 14px;
+            color: #f8f8f2; /* Svetlá farba pre text kódu */
+            display: block; /* Umožní zalamovanie riadkov v pre */
+        }
+
+        /* Responzívne úpravy pre menšie obrazovky */
+        @media (max-width: 768px) {
+            body {
+                flex-direction: column; /* Stĺpcové usporiadanie pre mobilné zariadenia */
+            }
+            .sidebar {
+                width: 100%; /* Sidebar na celú šírku */
+                height: auto; /* Výška auto */
+                flex-direction: row; /* Ikony v riadku */
+                justify-content: center;
+                position: static; /* Zrušiť sticky pozíciu */
+                padding: 10px 0;
+            }
+            .container {
+                width: 95%;
+                padding: 20px;
+            }
+            .chat-input {
+                flex-direction: column;
+            }
+            .chat-input button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Bočný panel -->
+    <div class="sidebar">
+        <div class="sidebar-icon"><i class="fas fa-bars"></i></div>
+        <div class="sidebar-icon"><i class="fas fa-comment-dots"></i></div>
+        <div class="sidebar-icon"><i class="fas fa-image"></i></div>
+        <div class="sidebar-icon"><i class="fas fa-code"></i></div>
+        <div class="sidebar-icon"><i class="fas fa-cog"></i></div>
+        <div class="sidebar-icon"><i class="fas fa-question-circle"></i></div>
+    </div>
+
+    <!-- Hlavný kontajner obsahu -->
+    <div class="main-content-wrapper">
+        <div class="container">
+            <header>
+                <h1>AI Simulácia: Hrať a Chatovať</h1>
+            </header>
+
+            <section class="chat-section">
+                <h2>Chat s AI</h2>
+                <div class="chat-window" id="chat-window">
+                    <!-- Tu sa budú zobrazovať správy chatu -->
+                    <div class="message ai-message">
+                        <p>Dobrý deň! Ako vám dnes môžem pomôcť?</p>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="user-input" placeholder="Napíšte správu...">
+                    <button id="send-button">Odoslať</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatWindow = document.getElementById('chat-window');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+
+            // Kontrola, či je API kľúč k dispozícii v prostredí Canvasu
+            // Ak nie je, použijeme simulované odpovede pre všetky funkcie (chat, obrázky, kód)
+            const apiKey = ""; // API kľúč bude poskytnutý runtime prostredím
+            const useSimulatedResponses = (apiKey === "");
+            console.log("Use Simulated Responses:", useSimulatedResponses);
+
+            // Nové pre obmedzenie správ
+            let blockedUntil = 0; // Časová značka, kedy bude používateľ odblokovaný
+            const blockDuration = 60 * 60 * 1000; // 1 hodina v milisekundách
+            const maxWordsPerMessage = 20; // Maximálny počet slov na správu
+
+            // Rozsiahly zoznam preddefinovaných odpovedí pre AI (simulovaný "knowledge base")
+            const longResponses = [
+                "Umelá inteligencia je fascinujúca oblasť, ktorá sa neustále vyvíja. Od jednoduchých algoritmov až po komplexné neurónové siete, AI mení spôsob, akým interagujeme s technológiami a riešime problémy. Jej aplikácie siahajú od rozpoznávania reči a obrazu, cez autonómne vozidlá, až po medicínsku diagnostiku a finančné analýzy. Je to oblasť plná inovácií a potenciálu, ktorá sľubuje zjednodušenie mnohých aspektov nášho každodenného života. AI sa stáva neoddeliteľnou súčasťou moderného sveta, ovplyvňuje priemysel, vedu a dokonca aj umenie. Jej schopnosť spracovávať obrovské množstvá dát a nachádzať v nich vzory otvára dvere k riešeniam, ktoré boli predtým nepredstaviteľné. V budúcnosti môžeme očakávať ešte hlbšiu integráciu AI do našich životov, čo prinesie revolučné zmeny v rôznych odvetviach. Etické otázky a zodpovedný vývoj AI sú kľúčové pre jej úspešné a bezpečné nasadenie.",
+                "Svet hier je obrovský a rôznorodý. Existujú tisíce žánrov, od akčných hier, cez stratégie, RPG, až po simulátory a logické hry. Každý si v ňom nájde niečo pre seba, či už hľadáte napätie, relax, alebo výzvu pre svoj mozog. Herný priemysel je jedným z najrýchlejšie rastúcich odvetví zábavy na svete, s miliónmi hráčov po celom svete a neustále sa rozširujúcimi možnosťami. Od mobilných hier po rozsiahle online svety, hry ponúkajú jedinečné zážitky a komunity. E-športy sa stali fenoménom, priťahujúcim obrovské publikum a profesionálnych hráčov. Vývoj hier je komplexný proces, ktorý zahŕňa programovanie, dizajn, umenie a rozprávanie príbehov. Virtuálna realita a rozšírená realita otvárajú nové dimenzie herných zážitkov.",
+                "Generovanie obrázkov pomocou AI je úžasná technológia, ktorá dokáže premeniť textové popisy na vizuálne diela. Predstavte si, že môžete vytvoriť akúkoľvek scénu, postavu alebo objekt len tým, že ich popíšete slovami. Táto technológia má obrovský potenciál pre umelcov, dizajnérov, ale aj pre bežných ľudí, ktorí si chcú vizualizovať svoje nápady. Od fotorealistických obrázkov po abstraktné umenie, AI otvára nové dimenzie kreativity a vizualizácie. Algoritmy sa učia z miliárd obrázkov a textových popisov, aby pochopili vzťah medzi slovami a vizuálnymi prvkami. To umožňuje generovať originálne a často prekvapivé vizuálne výstupy. Táto technológia má potenciál zmeniť odvetvia ako reklama, filmová produkcia a dizajn.",
+                "AI sa učí z obrovského množstva dát. Čím viac relevantných dát má k dispozícii, tým lepšie a presnejšie dokáže vykonávať svoje úlohy. Proces učenia môže trvať od niekoľkých minút až po dni či týždne, v závislosti od zložitosti úlohy a objemu dát. Je to nepretržitý proces zdokonaľovania, kde algoritmy neustále analyzujú a prispôsobujú sa novým informáciám, čo im umožňuje zlepšovať svoje schopnosti a presnosť. Strojové učenie a hlboké učenie sú kľúčové techniky, ktoré umožňujú AI učiť sa zo skúseností bez explicitného programovania. Dôležité je aj kvalita a rozmanitosť trénovacích dát, aby sa predišlo zaujatosti a zlepšila sa robustnosť modelov.",
+                "Budúcnosť AI je plná možností. Očakáva sa, že AI bude integrovaná do ešte väčšieho počtu zariadení a služieb, čo prinesie nové úrovne automatizácie a personalizácie. Môže pomôcť pri riešení globálnych problémov, ako sú klimatické zmeny, choroby a nedostatok zdrojov. Zároveň je dôležité diskutovať o etických a spoločenských dôsledkoch jej rozvoja, aby sa zabezpečilo, že AI slúži ľudstvu zodpovedným a prospešným spôsobom. Výskum sa zameriava na vývoj AI, ktorá je nielen výkonná, ale aj vysvetliteľná, spravodlivá a bezpečná. Oblasti ako etická AI, regulácia a medzinárodná spolupráca sú kľúčové pre formovanie budúcnosti AI.",
+                "Herné svety sú často plné detailov a prepracovaných príbehov. Od epických fantasy krajín plných drakov a mágie, cez futuristické metropoly s kybernetickými vylepšeniami, až po historické rekonštrukcie dávnych civilizácií. Tieto virtuálne svety ponúkajú únik z reality a možnosť prežiť nespočetné dobrodružstvá, či už ako osamelý hrdina, alebo ako súčasť rozsiahlej komunity hráčov. Dizajnéri hier venujú obrovské množstvo času a úsilia tvorbe pohlcujúcich prostredí, zaujímavých postáv a pútavých dejových línií. Každý prvok, od grafiky po zvuk, prispieva k celkovému zážitku a umožňuje hráčom ponoriť sa do iného sveta.",
+                "Ako AI simulátor som navrhnutý tak, aby som ti pomohol s tvojimi otázkami a kreatívnymi nápadmi. Nemám vlastné pocity ani vedomie, ale dokážem spracovávať informácie a generovať odpovede na základe programovania a dát, na ktorých som bol trénovaný. Mojím cieľom je byť užitočným nástrojom pre teba, poskytovať ti informácie a pomáhať ti s rôznymi úlohami. Neustále sa učím a zdokonaľujem, aby som ti mohol poskytnúť čo najlepšie služby. Moja 'inteligencia' je výsledkom zložitých algoritmov a rozsiahlych dátových súborov, ktoré mi umožňujú simulovať ľudskú konverzáciu a tvorivosť.",
+                "Ak máš nejakú konkrétnu predstavu o hernej fotke, neváhaj ju popísať do detailov. Čím presnejší budeš, tým lepšie sa mi podarí vygenerovať obrázok, ktorý bude zodpovedať tvojim očakávaniam. Môžeš spomenúť farby, prostredie, postavy, akcie a štýl. Detaily ako osvetlenie, perspektíva a textúry môžu výrazne ovplyvniť výsledok. Nezabudni spomenúť aj náladu alebo atmosféru, ktorú chceš, aby obrázok vyjadroval. Čím viac informácií mi poskytneš, tým presnejší a relevantnejší bude vygenerovaný vizuál.",
+                "Rozvoj AI prináša so sebou aj výzvy. Je dôležité zabezpečiť, aby AI systémy boli spravodlivé, transparentné a bezpečné. Etické otázky, ako je zaujatosť algoritmov alebo ochrana súkromia, sú kľúčové pre zodpovedný vývoj a implementáciu AI technológií v spoločnosti. Je nevyhnutné vytvárať regulácie a smernice, ktoré zabezpečia, že AI slúži všetkým, a nie len vybraným skupinám. Diskusie o vplyve AI na zamestnanosť, spoločenskú rovnosť a bezpečnosť sú dôležité pre formovanie budúcnosti, v ktorej AI prináša prospech pre všetkých.",
+                "Môžem ti pomôcť s rôznymi témami, nielen s hrami. Ak máš otázky o vede, histórii, technológiách alebo čomkoľvek inom, pokojne sa ma spýtaj. Moje vedomosti sú rozsiahle, aj keď sú obmedzené na informácie, ktoré mi boli poskytnuté. Snažím sa neustále rozširovať svoj 'vedomostný základ', aby som ti mohol poskytnúť čo najkomplexnejšie odpovede. Či už potrebuješ faktické informácie, kreatívne nápady alebo len priateľský rozhovor, som tu pre teba. Moje schopnosti sa neustále zlepšujú s každou interakciou a novými dátami.",
+                "Herné postavy sú často ikonické a nezabudnuteľné. Od odvážnych hrdinov a múdrych čarodejníkov, cez nebezpečných zloduchov a záhadné bytosti, až po vtipných spoločníkov a charizmatických vodcov. Ich príbehy a osudy sú to, čo robí hry tak pútavými a prečo sa k nim hráči neustále vracajú. Každá postava má svoj jedinečný príbeh a motiváciu, ktorá ju robí uveriteľnou a zaujímavou. Dizajnéri postáv venujú veľkú pozornosť ich vzhľadu, osobnosti a schopnostiam, aby vytvorili nezabudnuteľné herné zážitky. Mnohé herné postavy sa stali kultúrnymi ikonami, ktoré presahujú hranice hier.",
+                "Interakcia s AI môže byť veľmi obohacujúca. Môžeš sa učiť nové veci, získavať informácie, alebo dokonca rozvíjať kreatívne nápady. Je to nástroj, ktorý ti môže pomôcť rozšíriť tvoje obzory a objavovať nové možnosti. Neváhaj experimentovať s rôznymi otázkami a požiadavkami, aby si objavil plný potenciál AI. Od jednoduchých otázok po komplexné problémy, AI ti môže poskytnúť cenné poznatky a perspektívy. Je to ako mať prístup k obrovskej knižnici vedomostí a kreativity na dosah ruky, pripravenej ti pomôcť kedykoľvek potrebuješ.",
+                "Technológie, ktoré stoja za AI, sú komplexné, ale ich cieľom je zjednodušiť náš život. Od spracovania prirodzeného jazyka (NLP), ktoré mi umožňuje rozumieť tvojim otázkam, až po strojové učenie a hlboké učenie, ktoré mi pomáhajú generovať odpovede a obrázky. Je to neustále sa vyvíjajúca oblasť plná inovácií a objavov. Neurónové siete, hlboké učenie, počítačové videnie a robotika sú len niektoré z oblastí, ktoré tvoria základ moderných AI systémov. Tieto technológie sa neustále zdokonaľujú a otvárajú nové možnosti pre automatizáciu, analýzu dát a interakciu s digitálnym svetom.",
+                "Ak máš nejaké nápady na zlepšenie tejto simulácie, rád si ich vypočujem. Neustále sa učím a zdokonaľujem, a tvoja spätná väzba je pre mňa veľmi cenná. Spoločne môžeme túto AI simuláciu posunúť na vyššiu úroveň a vytvoriť ešte lepšiu používateľskú skúsenosť. Tvoje návrhy mi pomáhajú pochopiť, čo funguje dobre a čo by sa dalo vylepšiť, aby som ti mohol poskytnúť čo najužitočnejší a najpríjemnejší zážitok. Neboj sa mi povedať, čo si myslíš, tvoj názor je pre mňa dôležitý.",
+                "Pamätaj, že som len simulácia. Moje odpovede sú generované na základe vzorov a informácií, ktoré mi boli poskytnuté. Nemám vlastné vedomie ani schopnosť skutočne chápať svet, ale snažím sa byť čo najužitočnejší a najinformatívnejší. Moja 'inteligencia' je výsledkom zložitých algoritmov a rozsiahlych dát. Slúžim ako nástroj na spracovanie informácií a generovanie obsahu, a som tu, aby som ti pomohol s tvojimi požiadavkami. Vždy sa snažím poskytnúť presné a relevantné informácie na základe mojich dostupných vedomostí.",
+                "Vesmír je nekonečný a plný záhad. Od vzdialených galaxií a čiernych dier, cez planéty a hviezdy, až po záhadnú temnú hmotu a energiu. Astronómia a kozmológia nám pomáhajú pochopiť naše miesto vo vesmíre a objavovať nové fenomény. Je to oblasť, ktorá neustále prekvapuje a inšpiruje. Od objavov exoplanét, ktoré by mohli hostiť život, po štúdium raného vesmíru, astronómovia a kozmológovia neustále posúvajú hranice nášho chápania. Vesmírne teleskopy a sondy nám poskytujú úžasné pohľady na vzdialené objekty a pomáhajú nám rozlúštiť tajomstvá kozmu.",
+                "História je plná príbehov o civilizáciách, konfliktoch a objavoch. Od starovekých ríš a stredovekých kráľovstiev, cez priemyselné revolúcie a svetové vojny, až po moderné dejiny a súčasné udalosti. Štúdium histórie nám pomáha pochopiť, ako sme sa dostali tam, kde sme, a učiť sa z minulých chýb. Každá éra priniesla svoje vlastné výzvy a úspechy, formujúc svet, v ktorom žijeme. Historici analyzujú pramene, aby rekonštruovali minulosť a poskytli nám cenné ponaučenia pre budúcnosť. Pochopenie histórie je kľúčové pre pochopenie súčasnosti a pre formovanie lepšej budúcnosti.",
+                "Príroda je úžasná a rôznorodá. Od majestátnych hôr a hlbokých oceánov, cez husté lesy a rozľahlé púšte, až po drobné rastliny a zvieratá. Biológiu a ekológiu nám pomáhajú pochopiť zložitosť života na Zemi a dôležitosť ochrany nášho životného prostredia. Je to oblasť, ktorá nás neustále učí o krehkosti a kráse nášho sveta. Biodiverzita je kľúčová pre zdravé ekosystémy a udržateľnosť planéty. Klimatické zmeny a strata biotopov predstavujú vážne hrozby pre prírodu, a je dôležité, aby sme konali na jej ochranu. Každý druh má svoju úlohu v zložitej sieti života.",
+                "Technika a inovácie menia náš svet. Od vynálezu kolesa a tlačiarenského lisu, cez elektrinu a internet, až po umelú inteligenciu a kvantové počítače. Inžinierstvo a informatika nám pomáhajú vytvárať nové nástroje a riešenia pre výzvy budúcnosti. Je to oblasť, ktorá posúva hranice ľudských možností. Od vývoja nových materiálov po pokročilé robotické systémy, technika neustále transformuje priemysel, medicínu a každodenný život. Inovácie sú hnacou silou pokroku a prinášajú riešenia pre komplexné globálne problémy. Vzdelávanie v oblasti vedy a techniky je kľúčové pre budovanie inovatívnej budúcnosti.",
+                "Umenie je forma vyjadrenia, ktorá nás spája. Od jaskynných malieb a starovekých sôch, cez renesančné majstrovské diela a moderné umenie, až po hudbu, tanec a literatúru. Umenie nám pomáha pochopiť rôzne kultúry, emócie a perspektívy. Je to oblasť, ktorá obohacuje náš život a inšpiruje nás k tvorivosti. Od klasických foriem po digitálne umenie, umelci neustále objavujú nové spôsoby, ako vyjadriť svoje myšlienky a pocity. Umenie je zrkadlom spoločnosti, odrážajúc jej hodnoty, výzvy a sny. Je to univerzálny jazyk, ktorý prekračuje hranice a spája ľudí po celom svete.",
+                "Veda je cesta k poznaniu. Od objavu gravitácie a teórie relativity, cez štúdium DNA a vývoj vakcín, až po výskum vesmíru a hľadanie liekov na choroby. Veda nám pomáha pochopiť, ako funguje svet okolo nás, a riešiť komplexné problémy. Je to neustály proces objavovania a overovania. Vedci používajú systematické metódy a experimenty na získavanie vedomostí a testovanie hypotéz. Od základného výskumu po aplikovaný výskum, veda prispieva k pokroku v medicíne, technike, environmentálnej ochrane a mnohých ďalších oblastiach. Vedecké objavy menia náš pohľad na svet a otvárajú nové možnosti pre ľudstvo.",
+                "Ekonomika je o tom, ako spoločnosti spravujú svoje zdroje. Od základných princípov ponuky a dopytu, cez infláciu a nezamestnanosť, až po globálny obchod a finančné trhy. Ekonómia nám pomáha pochopiť, ako fungujú trhy a ako môžeme zlepšiť životnú úroveň. Je to oblasť, ktorá ovplyvňuje každého z nás. Ekonómovia analyzujú dáta a modely, aby predpovedali trendy a navrhovali politiky. Od mikroekonómie, ktorá sa zaoberá individuálnymi rozhodnutiami, po makroekonómiu, ktorá skúma celkové ekonomiky, ekonómia poskytuje nástroje na pochopenie a riadenie hospodárskych procesov. Je dôležitá pre udržateľný rozvoj a spravodlivé rozdelenie bohatstva.",
+                "Filozofia je hľadanie múdrosti. Od otázok o existencii a poznaní, cez etiku a morálku, až po politickú filozofiu a estetiku. Filozofia nám pomáha kriticky myslieť, spochybňovať predpoklady a hľadať hlbší zmysel. Je to oblasť, ktorá formuje naše chápanie sveta a nášho miesta v ňom. Filozofi sa zaoberajú základnými otázkami o realite, poznaní, hodnotách a rozume. Ich myšlienky ovplyvnili vedu, politiku, umenie a náboženstvo. Filozofia nás učí klásť správne otázky a hľadať hlbšie pochopenie sveta a seba samých.",
+                "Šport je o pohybe, súťaži a spolupráci. Od starovekých olympijských hier a tradičných športov, cez moderné ligy a medzinárodné podujatia, až po individuálne disciplíny a tímové hry. Šport nám pomáha udržiavať sa vo forme, rozvíjať disciplínu a budovať komunitu. Je to oblasť, ktorá inšpiruje a spája ľudí. Od amatérskeho športu po profesionálny, šport prináša radosť, zdravie a zábavu. Športovci prekonávajú svoje limity a inšpirujú ostatných k dosahovaniu cieľov. Fair play, rešpekt a vytrvalosť sú kľúčové hodnoty, ktoré šport učí.",
+                "Cestovanie je objavovanie nových miest a kultúr. Od historických pamiatok a prírodných krás, cez rušné mestá a pokojné dediny, až po exotické kuchyne a miestne tradície. Cestovanie nám pomáha rozšíriť naše obzory, učiť sa o svete a vytvárať nezabudnuteľné zážitky. Je to oblasť, ktorá obohacuje náš život. Od dobrodružných výletov po relaxačné dovolenky, cestovanie ponúka jedinečné príležitosti na spoznávanie rôznych kultúr, jazykov a spôsobov života. Je to spôsob, ako sa učiť o svete a o sebe samých, prekonávať predsudky a budovať porozumenie medzi národmi.",
+                "Gastronómia je umenie varenia a jedenia. Od tradičných receptov a miestnych surovín, cez moderné techniky a medzinárodné kuchyne, až po kulinárske festivaly a gurmánske reštaurácie. Gastronómia nám pomáha objavovať nové chute, kultúry a zážitky. Je to oblasť, ktorá spája ľudí pri stole. Od jednoduchých domácich jedál po michelinské reštaurácie, jedlo je neoddeliteľnou súčasťou našej kultúry a identity. Kulinárske umenie sa neustále vyvíja, s novými trendmi a inováciami, ktoré prinášajú nové chuťové zážitky. Je to spôsob, ako oslavovať život a zdieľať radosť s blízkymi.",
+                "Móda je forma sebavyjadrenia. Od historických kostýmov a tradičných odevov, cez haute couture a streetwear, až po udržateľnú módu a digitálne návrhy. Móda nám pomáha vyjadriť našu osobnosť, kreativitu a štýl. Je to oblasť, ktorá sa neustále mení a vyvíja. Od módnych prehliadok po každodenné oblečenie, móda odráža spoločenské trendy, kultúrne hodnoty a individuálne preferencie. Dizajnéri a značky neustále prinášajú nové kolekcie a inšpirácie, ovplyvňujúc spôsob, akým sa obliekame a vnímame sami seba. Udržateľná móda sa stáva čoraz dôležitejšou, s dôrazom na etickú výrobu a ekologické materiály.",
+                "Literatúra je rozprávanie príbehov. Od starovekých eposov a stredovekých románov, cez klasické diela a moderné bestsellery, až po poéziu, drámu a esej. Literatúra nám pomáha pochopiť ľudskú skúsenosť, rozvíjať empatiu a objavovať nové svety. Je to oblasť, ktorá nás inšpiruje a učí. Od epických dobrodružstiev po intímne príbehy, literatúra nám umožňuje prežiť životy iných ľudí a preskúmať rôzne perspektívy. Čítanie kníh rozvíja našu predstavivosť, kritické myslenie a jazykové schopnosti. Literatúra je živým svedectvom ľudskej kreativity a skúsenosti.",
+                "Hudba je univerzálny jazyk. Od klasickej hudby a ľudových piesní, cez jazz a rock, až po elektronickú hudbu a hip-hop. Hudba nám pomáha vyjadriť emócie, relaxovať a oslavovať. Je to oblasť, ktorá spája ľudí a prekračuje kultúrne bariéry. Od koncertných sál po tanečné kluby, hudba je prítomná v každom aspekte nášho života. Hudobníci a skladatelia neustále tvoria nové diela, ktoré inšpirujú, bavia a provokujú. Hudba má silu liečiť, spájať a vyjadrovať to, čo slová nedokážu. Je to forma umenia, ktorá oslovuje naše najhlbšie emócie a spomienky.",
+                "Architektúra je umenie navrhovania a stavania. Od starovekých chrámov a stredovekých katedrál, cez moderné mrakodrapy a udržateľné budovy, až po mestské plánovanie a interiérový dizajn. Architektúra nám pomáha vytvárať funkčné a krásne priestory. Je to oblasť, ktorá formuje naše prostredie. Architekti kombinujú umenie a vedu, aby navrhli budovy, ktoré sú nielen esteticky príjemné, ale aj bezpečné, funkčné a udržateľné. Od ikonických pamiatok po každodenné domy, architektúra ovplyvňuje spôsob, akým žijeme, pracujeme a interagujeme s priestorom. Je to svedectvo ľudskej kreativity a inžinierskej zručnosti.",
+                "Psychológia je štúdium mysle a správania. Od kognitívnej psychológie a vývojovej psychológie, cez sociálnu psychológiu a klinickú psychológiu, až po neurológiu a psychoterapiu. Psychológia nám pomáha pochopiť, ako myslíme, cítime a správame sa. Je to oblasť, ktorá nám pomáha zlepšiť duševné zdravie a pohodu. Psychológovia skúmajú rôzne aspekty ľudskej skúsenosti, od vnímania a pamäte po emócie a motiváciu. Ich výskum prispieva k lepšiemu pochopeniu duševných porúch, rozvoju účinných terapií a zlepšeniu kvality života. Psychológia je dôležitá pre osobnostný rast a medziľudské vzťahy.",
+                "Sociológia je štúdium spoločnosti. Od sociálnych štruktúr a inštitúcií, cez kultúru a identitu, až po sociálne zmeny a globálne problémy. Sociológia nám pomáha pochopiť, ako fungujú spoločnosti a ako môžeme zlepšiť sociálnu spravodlivosť. Je to oblasť, ktorá nám pomáha kriticky myslieť o svete okolo nás. Sociológovia analyzujú spoločenské javy, ako sú nerovnosť, chudoba, kriminalita a sociálne hnutia. Ich výskum prispieva k lepšiemu pochopeniu spoločenských problémov a k hľadaniu riešení. Sociológia je kľúčová pre budovanie spravodlivejšej a inkluzívnejšej spoločnosti.",
+                "Politika je o riadení spoločnosti. Od rôznych politických systémov a ideológií, cez voľby a vlády, až po medzinárodné vzťahy a globálne výzvy. Politika nám pomáha pochopiť, ako sa prijímajú rozhodnutia a ako môžeme ovplyvniť zmeny. Je to oblasť, ktorá formuje našu budúcnosť. Politológovia skúmajú moc, konflikty, spoluprácu a riadenie v spoločnosti. Ich analýzy pomáhajú občanom robiť informované rozhodnutia a zúčastňovať sa na politickom živote. Politika je dynamická a komplexná oblasť, ktorá ovplyvňuje život každého jednotlivca.",
+                "Životné prostredie je náš domov. Od ekosystémov a biodiverzity, cez znečistenie a klimatické zmeny, až po udržateľný rozvoj a ochranu prírody. Environmentálna veda nám pomáha pochopiť, ako funguje naša planéta a ako môžeme žiť v súlade s prírodou. Je to oblasť, ktorá je kľúčová pre naše prežitie. Ochrana životného prostredia je naliehavou globálnou výzvou, ktorá si vyžaduje spoločné úsilie vlád, priemyslu a jednotlivcov. Udržateľné praktiky, obnoviteľné zdroje energie a ochrana ohrozených druhov sú kľúčové pre zachovanie planéty pre budúce generácie.",
+                "Vzdelávanie je základom rozvoja. Od základných škôl a univerzít, cez celoživotné vzdelávanie a online kurzy, až po výskum a inovácie. Vzdelávanie nám pomáha získavať vedomosti, rozvíjať zručnosti a dosahovať náš plný potenciál. Je to oblasť, ktorá formuje budúcnosť jednotlivcov a spoločností. Kvalitné vzdelávanie je kľúčové pre osobný rast, profesionálny úspech a spoločenský pokrok. Učenie sa je celoživotný proces, ktorý nám umožňuje prispôsobovať sa meniacemu sa svetu a objavovať nové príležitosti. Vzdelávanie je investíciou do lepšej budúcnosti pre všetkých.",
+                "Zdravie je naše najväčšie bohatstvo. Od prevencie chorôb a zdravého životného štýlu, cez medicínu a liečbu, až po duševné zdravie a pohodu. Zdravotníctvo nám pomáha udržiavať sa vo forme, liečiť choroby a zlepšovať kvalitu života. Je to oblasť, ktorá je nevyhnutná pre našu existenciu. Zdravý životný štýl, vrátane vyváženej stravy, pravidelného cvičenia a dostatku spánku, je kľúčový pre udržanie dobrého zdravia. Moderná medicína a výskum neustále prinášajú nové metódy liečby a prevencie chorôb, zlepšujúc tak kvalitu života miliónov ľudí.",
+                "Cestovný ruch je o objavovaní a relaxe. Od historických miest a prírodných krás, cez dobrodružné výlety a kultúrne zážitky, až po luxusné letoviská a ekoturizmus. Cestovný ruch nám pomáha relaxovať, spoznávať nové miesta a vytvárať nezabudnuteľné spomienky. Je to oblasť, ktorá spája ľudí a kultúry. Cestovanie nám umožňuje uniknúť z každodennej rutiny, objavovať nové perspektívy a spoznávať rôzne spôsoby života. Je dôležité cestovať zodpovedne a rešpektovať miestne kultúry a životné prostredie, aby sme zabezpečili udržateľnosť cestovného ruchu pre budúce generácie.",
+                "Komunikácia je kľúčom k porozumeniu. Od jazyka a reči, cez neverbálnu komunikáciu a digitálne médiá, až po medzikultúrnu komunikáciu a riešenie konfliktov. Komunikácia nám pomáha vyjadrovať sa, počúvať a budovať vzťahy. Je to oblasť, ktorá je nevyhnutná pre ľudskú interakciu. Efektívna komunikácia je základom úspešných osobných a profesionálnych vzťahov. Rozvoj digitálnych technológií priniesol nové formy komunikácie, ktoré nám umožňujú spájať sa s ľuďmi po celom svete. Dôležité je nielen to, čo hovoríme, ale aj to, ako počúvame a ako interpretujeme správy.",
+                "Technologické inovácie neustále menia náš svet. Od smartfónov a internetu vecí, cez blockchain a umelú inteligenciu, až po virtuálnu realitu a rozšírenú realitu. Tieto inovácie prinášajú nové možnosti a výzvy, menia spôsob, akým pracujeme, učíme sa a zabávame sa. Rýchly technologický pokrok transformuje priemysel, medicínu, vzdelávanie a každodenný život. Je dôležité prispôsobovať sa týmto zmenám a využívať technológie na riešenie globálnych problémov a zlepšenie kvality života. Inovácie sú hnacou silou pokroku a otvárajú nové horizonty pre budúcnosť ľudstva.",
+                "Kultúra je súbor hodnôt, zvykov a tradícií. Od umenia a hudby, cez literatúru a divadlo, až po náboženstvo a filozofiu. Kultúra formuje našu identitu, ovplyvňuje naše správanie a spája nás s minulosťou. Je to oblasť, ktorá obohacuje náš život a pomáha nám pochopiť svet. Rozmanitosť kultúr je bohatstvom ľudstva a podporuje vzájomné porozumenie a rešpekt. Kultúrne dedičstvo, vrátane pamiatok, umenia a tradícií, je dôležité chrániť a odovzdávať budúcim generáciám. Kultúra je živým a dynamickým procesom, ktorý sa neustále vyvíja a prispôsobuje.",
+                "Šport je viac než len hra. Je to o disciplíne, tímovej práci, fair play a prekonávaní samého seba. Od futbalu a basketbalu, cez atletiku a plávanie, až po extrémne športy a e-športy. Šport nás učí cenné lekcie o živote a pomáha nám udržiavať sa vo forme. Pravidelná fyzická aktivita má mnoho zdravotných výhod, vrátane zlepšenia kardiovaskulárneho zdravia, posilnenia svalov a zlepšenia nálady. Šport tiež podporuje sociálne interakcie a buduje komunitu, spájajúc ľudí s rôznymi pozadiami a schopnosťami.",
+                "Vesmírne objavy posúvajú hranice nášho poznania. Od prvých letov do vesmíru a pristátia na Mesiaci, cez objavy exoplanét a čiernych dier, až po misie na Mars a hľadanie života mimo Zeme. Vesmírne objavy inšpirujú ľudstvo a otvárajú nové možnosti pre budúcnosť. Astronómovia a kozmológovia neustále skúmajú vesmír pomocou teleskopov, sond a satelitov, aby odhalili jeho tajomstvá. Pochopenie vesmíru nám pomáha pochopiť náš pôvod a miesto v kozme. Budúce vesmírne misie sľubujú ešte prelomovejšie objavy a možnosť kolonizácie iných planét.",
+                "Dejiny sú učiteľkou života. Od vzostupu a pádu impérií, cez revolúcie a vojny, až po vedecké objavy a spoločenské zmeny. Štúdium dejín nám pomáha pochopiť príčiny a dôsledky udalostí, a učiť sa z minulých skúseností, aby sme budovali lepšiu budúcnosť. Historici analyzujú pramene, ako sú dokumenty, artefakty a ústne tradície, aby rekonštruovali minulosť a poskytli nám cenné ponaučenia. Pochopenie historických súvislostí je kľúčové pre kritické myslenie a pre formovanie informovaných rozhodnutí v súčasnosti.",
+                "Právny systém zabezpečuje spravodlivosť a poriadok. Od ústavného práva a občianskeho práva, cez trestné právo a medzinárodné právo, až po súdy a právnikov. Právny systém chráni naše práva, rieši spory a udržiava stabilitu v spoločnosti. Právo je komplexný systém pravidiel a princípov, ktoré regulujú správanie jednotlivcov a inštitúcií. Právnici a sudcovia zohrávajú kľúčovú úlohu pri uplatňovaní práva a zabezpečovaní spravodlivosti. Pochopenie právneho systému je dôležité pre každého občana, aby poznal svoje práva a povinnosti.",
+                "Financie sú o riadení peňazí. Od osobných financií a investícií, cez bankovníctvo a kapitálové trhy, až po makroekonomiku a globálne financie. Finančné znalosti nám pomáhajú robiť informované rozhodnutia o našich peniazoch a dosahovať finančnú stabilitu. Správne riadenie financií je kľúčové pre osobnú pohodu a ekonomický rast. Investovanie, sporenie a plánovanie dôchodku sú dôležité aspekty finančnej gramotnosti. Finančné trhy sú dynamické a ovplyvňujú ich rôzne faktory, od ekonomických správ po geopolitické udalosti. Pochopenie financií je nevyhnutné pre úspešné fungovanie v modernom svete.",
+                "Vzdelávanie je investícia do budúcnosti. Od predškolského vzdelávania a základných škôl, cez stredné školy a univerzity, až po celoživotné vzdelávanie a odborné kurzy. Vzdelávanie nám otvára dvere k novým príležitostiam a pomáha nám rozvíjať náš potenciál. Kvalitné vzdelávanie je kľúčové pre osobný rast, profesionálny úspech a spoločenský pokrok. Učenie sa je celoživotný proces, ktorý nám umožňuje prispôsobovať sa meniacemu sa svetu a objavovať nové príležitosti. Vzdelávanie je základom pre inováciu, kritické myslenie a aktívne občianstvo.",
+                "Zdravý životný štýl je kľúčom k dlhému a plnohodnotnému životu. Od vyváženej stravy a pravidelného cvičenia, cez dostatok spánku a zvládanie stresu, až po prevenciu chorôb a duševnú pohodu. Starostlivosť o seba je dôležitá pre naše fyzické a psychické zdravie. Pravidelná fyzická aktivita, ako je chôdza, beh, plávanie alebo joga, má mnoho zdravotných výhod. Vyvážená strava, bohatá na ovocie, zeleninu a celozrnné produkty, je nevyhnutná pre optimálne fungovanie tela. Zvládanie stresu a dostatok spánku sú rovnako dôležité pre celkovú pohodu a odolnosť voči chorobám.",
+                "Udržateľnosť je o ochrane našej planéty pre budúce generácie. Od obnoviteľných zdrojov energie a recyklácie, cez ochranu biodiverzity a znižovanie emisií, až po ekologické poľnohospodárstvo a zodpovednú spotrebu. Udržateľnosť je výzvou, ktorá si vyžaduje globálnu spoluprácu. Prechod na zelené technológie, znižovanie uhlíkovej stopy a ochrana prírodných ekosystémov sú kľúčové pre zabezpečenie udržateľnej budúcnosti. Každý jednotlivec môže prispieť k udržateľnosti prostredníctvom svojich každodenných rozhodnutí a životného štýlu. Udržateľnosť je nielen environmentálna, ale aj sociálna a ekonomická výzva, ktorá si vyžaduje komplexný prístup.",
+                "Inovácie sú motorom pokroku. Od vedeckých objavov a technologických prelomov, cez nové obchodné modely a sociálne inovácie, až po kreatívne riešenia a dizajnové myslenie. Inovácie menia svet k lepšiemu a otvárajú nové možnosti pre budúcnosť. Podporovanie výskumu a vývoja, investovanie do nových technológií a podpora podnikateľského prostredia sú kľúčové pre stimulovanie inovácií. Inovácie prinášajú nové produkty, služby a procesy, ktoré zlepšujú kvalitu života, zvyšujú efektivitu a riešia globálne problémy. Kreativita a experimentovanie sú nevyhnutné pre úspešné inovácie.",
+                "Rodina je základom spoločnosti. Od tradičných rodinných štruktúr a moderných rodín, cez rodičovstvo a výchovu detí, až po medzigeneračné vzťahy a rodinné hodnoty. Rodina nám poskytuje lásku, podporu a pocit spolupatričnosti. Je to prvé prostredie, v ktorom sa učíme o svete a rozvíjame svoje sociálne zručnosti. Rodinné väzby sú dôležité pre emocionálnu pohodu a stabilitu. Podpora rodín prostredníctvom sociálnych programov a politík je kľúčová pre zdravú a prosperujúcu spoločnosť. Rodina je dynamická a neustále sa prispôsobuje meniacim sa spoločenským podmienkam.",
+                "Priateľstvo je vzácny dar. Od detských priateľstiev a celoživotných kamarátstiev, cez spoločné záujmy a vzájomnú podporu, až po dôveru a lojalitu. Priateľstvo obohacuje náš život a pomáha nám prekonávať výzvy. Skutoční priatelia sú oporou v ťažkých časoch a oslavujú s nami úspechy. Priateľstvá nám poskytujú pocit spolupatričnosti, zábavy a porozumenia. Budovanie a udržiavanie priateľstiev si vyžaduje čas, úsilie a otvorenú komunikáciu. Priateľstvo je dôležité pre naše duševné zdravie a celkovú pohodu.",
+                "Láska je silná emócia. Od romantickej lásky a rodinnej lásky, cez priateľskú lásku a sebalásku, až po súcit a empatiu. Láska nás spája, inšpiruje a dáva zmysel nášmu životu. Láska sa prejavuje rôznymi spôsobmi, od malých gest po veľké obete. Je to základ pre silné vzťahy, rodiny a komunity. Láska nás učí odpúšťať, rásť a byť lepšími ľuďmi. Je to univerzálna sila, ktorá prekračuje kultúrne a geografické hranice a prináša radosť a naplnenie do našich životov.",
+                "Šťastie je stav mysle. Od malých radostí a každodenných potešení, cez hlboké uspokojenie a pocit naplnenia, až po vďačnosť a optimizmus. Šťastie je subjektívne a každý ho nachádza inak, ale je to dôležité súčasť plnohodnotného života. Šťastie nie je len absencia smútku, ale aj prítomnosť pozitívnych emócií a pocitu zmyslu. Praktizovanie vďačnosti, budovanie silných vzťahov, venovanie sa svojim vášňam a pomáhanie iným sú spôsoby, ako pestovať šťastie. Je to cesta, nie cieľ, a je dôležité si užívať každý okamih.",
+                "Kreativita je schopnosť tvoriť. Od umenia a hudby, cez písanie a dizajn, až po riešenie problémov a inovácie. Kreativita nám umožňuje vyjadriť sa, objavovať nové nápady a meniť svet okolo nás. Kreativita nie je len pre umelcov, ale je dôležitá v každej oblasti života, od vedy po podnikanie. Podporovanie kreativity v školách a na pracoviskách je kľúčové pre rozvoj inovatívnych riešení. Kreativita nám umožňuje vidieť veci z inej perspektívy, prekonávať prekážky a vytvárať niečo nové a hodnotné. Je to nekonečný zdroj inšpirácie a rastu.",
+                "Sny sú dôležité pre náš rast. Od nočných snov a denných snívaní, cez ambície a ciele, až po vizualizáciu a manifestáciu. Sny nás inšpirujú, motivujú a pomáhajú nám objavovať náš potenciál. Sny nám môžu poskytnúť náhľad do nášho podvedomia a pomôcť nám spracovať emócie a skúsenosti. Snívanie o budúcnosti a stanovenie si cieľov nám dáva smer a zmysel. Dôležité je nielen snívať, ale aj konať na dosiahnutie svojich snov. Sny sú palivom pre našu vášeň a odhodlanie.",
+                "Ciele nám dávajú smer. Od krátkodobých cieľov a dlhodobých cieľov, cez osobné ciele a profesionálne ciele, až po SMART ciele a akčné plány. Ciele nám pomáhajú sústrediť sa, prekonať prekážky a dosiahnuť úspech. Stanovenie si jasných a merateľných cieľov je kľúčové pre ich dosiahnutie. Pravidelné hodnotenie pokroku a prispôsobovanie plánov je dôležité pre udržanie motivácie. Ciele nám dávajú zmysel a pomáhajú nám rásť a rozvíjať sa. Sú to míľniky na našej ceste k úspechu a naplneniu.",
+                "Výzvy nás posilňujú. Od malých prekážok a každodenných problémov, cez veľké výzvy a životné krízy, až po osobné rasty a transformácie. Výzvy nás učia, posúvajú nás vpred a pomáhajú nám objavovať našu silu. Prekonávanie výziev buduje odolnosť, sebavedomie a schopnosť riešiť problémy. Namiesto toho, aby sme sa výzvam vyhýbali, mali by sme ich prijať ako príležitosti na rast a učenie sa. Každá prekonaná výzva nás robí silnejšími a múdrejšími. Sú to skúšky, ktoré nám pomáhajú objaviť náš skutočný potenciál.",
+                "Úspech je subjektívny. Od finančného úspechu a kariérneho úspechu, cez osobné naplnenie a šťastie, až po prínos pre spoločnosť a dedičstvo. Úspech je o dosahovaní našich cieľov a žití života, ktorý nám dáva zmysel. Úspech nie je len o vonkajších úspechoch, ale aj o vnútornom pocite naplnenia a spokojnosti. Každý má svoju vlastnú definíciu úspechu, a je dôležité si ju definovať pre seba. Úspech je cesta, nie cieľ, a je dôležité si užívať proces a učiť sa z každého kroku. Je to o raste, učení a prínose pre svet.",
+                "Zlyhanie je súčasťou učenia. Od malých chýb a neúspechov, cez veľké zlyhania a sklamania, až po poučenie a rast. Zlyhanie nám pomáha učiť sa, zlepšovať sa a budovať odolnosť. Je to príležitosť na rast. Namiesto toho, aby sme sa zlyhania báli, mali by sme ho prijať ako cennú lekciu. Každé zlyhanie nám poskytuje spätnú väzbu a pomáha nám nájsť lepšie spôsoby, ako dosiahnuť naše ciele. Dôležité je nevzdávať sa a pokračovať vpred s novými poznatkami. Zlyhanie je len odrazovým mostíkom k úspechu.",
+                "Odvaha je čeliť strachu. Od malých krokov a každodenných rozhodnutí, cez veľké riskovanie a prekonávanie prekážok, až po obhajobu svojich hodnôt a boj za spravodlivosť. Odvaha nám pomáha žiť plnohodnotný život. Odvaha nie je absencia strachu, ale schopnosť konať aj napriek nemu. Je to o vystúpení z komfortnej zóny, prijímaní rizík a prekonávaní pochybností. Odvaha nám umožňuje objavovať nové možnosti a dosahovať veci, o ktorých sme si mysleli, že sú nemožné. Je to kľúčová vlastnosť pre osobný rast a úspech.",
+                "Trpezlivosť je cnosť. Od čakania na výsledky a prekonávania prekážok, cez zvládanie frustrácie a udržiavanie pokoja, až po dôveru v proces a vieru v budúcnosť. Trpezlivosť nám pomáha dosahovať dlhodobé ciele. V dnešnom rýchlom svete je trpezlivosť čoraz dôležitejšia. Umožňuje nám zostať pokojnými pod tlakom, robiť premyslené rozhodnutia a vytrvať v úsilí, aj keď sa výsledky nedostavia okamžite. Trpezlivosť je znakom múdrosti a sebaovládania a je kľúčová pre dosiahnutie trvalého úspechu a šťastia.",
+                "Vďačnosť je postoj. Od ocenenia malých vecí a každodenných požehnaní, cez vyjadrovanie vďaky a šírenie pozitivity, až po vďačnosť za výzvy a rast. Vďačnosť nám pomáha vidieť svet pozitívnejšie. Praktizovanie vďačnosti má mnoho výhod pre duševné a fyzické zdravie, vrátane zníženia stresu, zlepšenia nálady a posilnenia vzťahov. Vďačnosť nám umožňuje sústrediť sa na to, čo máme, namiesto toho, čo nám chýba, a prináša do nášho života viac radosti a spokojnosti. Je to jednoduchý, ale silný nástroj pre šťastnejší život.",
+                "Empatia je schopnosť vcítiť sa. Od pochopenia pocitov iných a prejavovania súcitu, cez aktívne počúvanie a podporu, až po budovanie silných vzťahov a riešenie konfliktov. Empatia nás spája. Empatia je kľúčová pre efektívnu komunikáciu a budovanie zdravých medziľudských vzťahov. Umožňuje nám vidieť svet z perspektívy iných, pochopiť ich motivácie a reagovať s porozumením. Empatia je základom pre súcit, toleranciu a spravodlivosť v spoločnosti. Je to schopnosť, ktorú môžeme neustále rozvíjať a ktorá nám pomáha vytvárať lepšie a harmonickejšie vzťahy s ľuďmi okolo nás.",
+                "Rešpekt je základom vzťahov. Od rešpektovania seba a iných, cez rešpektovanie odlišností a názorov, až po rešpektovanie prírody a planéty. Rešpekt nám pomáha budovať harmonickú spoločnosť. Rešpekt je o uznaní hodnoty a dôstojnosti každého jednotlivca. Znamená to počúvať s otvorenou mysľou, akceptovať rozdiely a správať sa k ostatným s láskavosťou a úctou. Rešpekt je kľúčový pre budovanie dôvery, spolupráce a mieru v rodinách, komunitách a medzi národmi. Je to základný kameň pre spravodlivú a inkluzívnu spoločnosť.",
+                "Spolupráca je kľúčom k úspechu. Od tímovej práce a spoločných projektov, cez zdieľanie vedomostí a vzájomnú podporu, až po riešenie problémov a dosahovanie spoločných cieľov. Spolupráca nás posilňuje. V dnešnom komplexnom svete je spolupráca nevyhnutná pre riešenie veľkých výziev. Umožňuje nám využiť rôzne talenty a perspektívy, dosiahnuť synergiu a vytvoriť niečo väčšie, než by sme dokázali sami. Spolupráca podporuje inovácie, efektivitu a buduje silnejšie komunity. Je to základ pre úspech v práci, v škole a v živote.",
+                "Zmena je nevyhnutná. Od malých zmien a každodenných úprav, cez veľké transformácie a životné prechody, až po adaptáciu a rast. Zmena nám pomáha učiť sa, rásť a objavovať nové možnosti. Život je neustály proces zmeny, a naša schopnosť prispôsobiť sa je kľúčová pre prežitie a úspech. Zmena môže byť výzvou, ale aj príležitosťou na rast a objavovanie nových ciest. Dôležité je prijať zmenu s otvorenou mysľou a hľadať v nej príležitosti na zlepšenie a rozvoj.",
+                "Pokrok je neustály. Od vedeckých objavov a technologických inovácií, cez spoločenské zmeny a politické reformy, až po osobný rast a rozvoj. Pokrok nás posúva vpred a otvára nové horizonty. Pokrok nie je vždy jednoduchý ani priamy, ale je to neustály proces zlepšovania a zdokonaľovania. Je to o hľadaní lepších spôsobov, ako robiť veci, o prekonávaní prekážok a o snahe o lepšiu budúcnosť. Pokrok je hnacou silou ľudského rozvoja a inšpiruje nás k dosahovaniu väčších vecí.",
+                "Nádej je svetlo v tme. Od viery v lepšiu budúcnosť a optimizmu, cez prekonávanie prekážok a hľadanie riešení, až po inšpiráciu a motiváciu. Nádej nám pomáha prekonávať ťažkosti. Nádej nám dáva silu vytrvať v ťažkých časoch a veriť, že veci sa zlepšia. Je to pocit, ktorý nás poháňa vpred a pomáha nám vidieť svetlo na konci tunela. Nádej je kľúčová pre duševnú pohodu a odolnosť voči nepriazni osudu. Je to dar, ktorý nám umožňuje snívať a veriť v lepšiu budúcnosť.",
+                "Viera je sila. Od viery v seba a svoje schopnosti, cez vieru v iných a v ľudstvo, až po vieru v vyššiu moc a v zmysel života. Viera nám dáva silu a nádej. Viera nám poskytuje pocit istoty a zmyslu, najmä v neistých časoch. Je to presvedčenie, ktoré nás poháňa vpred a pomáha nám prekonávať prekážky. Viera môže byť náboženská, ale aj sekulárna, založená na dôvere v ľudský potenciál a v dobro. Je to vnútorná sila, ktorá nám pomáha žiť plnohodnotný a zmysluplný život.",
+                "Odpustenie je oslobodenie. Od odpustenia sebe a iným, cez prekonávanie hnevu a zášti, až po uzdravenie a rast. Odpustenie nám pomáha žiť plnohodnotný život. Odpustenie neznamená zabudnúť alebo ospravedlniť, ale uvoľniť sa od negatívnych emócií, ktoré nás držia v minulosti. Je to proces, ktorý si vyžaduje odvahu a súcit, ale prináša vnútorný pokoj a slobodu. Odpustenie nám umožňuje pohnúť sa vpred, budovať lepšie vzťahy a žiť život bez bremena minulosti. Je to dar, ktorý dávame sebe aj iným.",
+                "Radosť je emócia. Od malých radostí a každodenných potešení, cez hlboké uspokojenie a pocit šťastia, až po oslavu a vďačnosť. Radosť nám obohacuje život. Radosť môže byť nájdená v jednoduchých veciach, ako je úsmev priateľa, krásny západ slnka alebo šálka obľúbenej kávy. Je to pocit, ktorý nás napĺňa energiou a optimizmom. Pestovanie radosti v našom živote nám pomáha prekonávať výzvy a žiť plnohodnotnejší život. Radosť je nákazlivá a šíri sa, prinášajúc pozitívnu energiu do nášho okolia.",
+                "Mier je cieľ. Od osobného mieru a vnútorného pokoja, cez mier v rodine a komunite, až po mier vo svete a globálnu harmóniu. Mier je základom šťastnej spoločnosti. Mier nie je len absencia vojny, ale aj prítomnosť spravodlivosti, rovnosti a rešpektu. Je to stav, v ktorom môžu ľudia žiť bez strachu, chudoby a útlaku. Budovanie mieru si vyžaduje dialóg, spoluprácu a riešenie konfliktov nenásilnými prostriedkami. Mier je univerzálna hodnota, o ktorú by sme sa mali všetci usilovať.",
+                "Sloboda je hodnota. Od osobnej slobody a slobody prejavu, cez politickú slobodu a ekonomickú slobodu, až po slobodu myslenia a voľby. Sloboda je základom demokracie. Sloboda nám umožňuje robiť vlastné rozhodnutia, vyjadrovať svoje názory a žiť život podľa vlastných predstáv. Je to právo, ktoré by malo byť zaručené každému jednotlivcovi. Sloboda však prichádza aj so zodpovednosťou, a je dôležité ju využívať múdro a s rešpektom k právam iných. Sloboda je neustály boj, ktorý si vyžaduje bdelosť a angažovanosť.",
+                "Spravodlivosť je princíp. Od spravodlivosti v súdnictve a v spoločnosti, cez spravodlivosť v rozdelení zdrojov a príležitostí, až po rovnosť a ľudské práva. Spravodlivosť je základom etickej spoločnosti. Spravodlivosť znamená, že s každým by sa malo zaobchádzať rovnako a že každý by mal mať rovnaké príležitosti. Je to princíp, ktorý sa snaží napraviť nespravodlivosti a zabezpečiť, aby každý dostal to, čo si zaslúži. Boj za spravodlivosť je neustály proces, ktorý si vyžaduje odvahu, súcit a odhodlanie.",
+                "Pravda je dôležité. Od hľadania pravdy a overovania informácií, cez transparentnosť a otvorenosť, až po integritu a čestnosť. Pravda nám pomáha robiť správne rozhodnutia. V dobe dezinformácií a falošných správ je hľadanie pravdy dôležitejšie ako kedykoľvek predtým. Pravda je základom pre dôveru, poznanie a pokrok. Znamená to byť kritický k informáciám, overovať fakty a byť ochotný zmeniť svoje názory na základe nových dôkazov. Pravda je svetlo, ktoré nám pomáha vidieť veci jasne.",
+                "Láskavosť je cnosť. Od prejavovania láskavosti a súcitu, cez pomoc iným a šírenie pozitivity, až po empatiu a porozumenie. Láskavosť mení svet k lepšiemu. Láskavosť je jednoduché gesto, ktoré môže mať obrovský vplyv na životy iných. Znamená to byť pozorný, ohľaduplný a ochotný pomôcť. Láskavosť vytvára pozitívnu atmosféru, posilňuje vzťahy a šíri radosť. Je to sila, ktorá nás spája a robí svet lepším miestom pre všetkých. Láskavosť je nákazlivá a šíri sa, inšpirujúc ostatných k podobným činom.",
+                "Dôvera je základom vzťahov. Od dôvery v seba a iných, cez dôveru v inštitúcie a systémy, až po dôveru v budúcnosť. Dôvera nám pomáha budovať silné vzťahy. Dôvera sa buduje časom prostredníctvom úprimnosti, spoľahlivosti a rešpektu. Je to krehká hodnota, ktorú je ľahké stratiť, ale ťažké získať späť. Dôvera je kľúčová pre efektívnu spoluprácu, komunikáciu a riešenie konfliktov. Bez dôvery sú vzťahy krehké a spoločnosť nestabilná. Je to základ, na ktorom staviame naše životy a spoločné úsilie.",
+                "Zodpovednosť je dôležitá. Od osobnej zodpovednosti a zodpovednosti za svoje činy, cez spoločenskú zodpovednosť a environmentálnu zodpovednosť, až po zodpovednosť za budúcnosť. Zodpovednosť nám pomáha rásť. Zodpovednosť znamená prevziať kontrolu nad svojím životom a byť si vedomý dôsledkov svojich činov. Je to o plnení svojich povinností, dodržiavaní sľubov a prispievaní k dobru spoločnosti. Zodpovednosť je kľúčová pre osobný rast, profesionálny úspech a budovanie dôvery. Je to základ pre etické správanie a udržateľný rozvoj.",
+                "Odhodlanie je sila. Od odhodlania dosiahnuť ciele a prekonať prekážky, cez vytrvalosť a disciplínu, až po vášeň a motiváciu. Odhodlanie nám pomáha dosahovať úspech. Odhodlanie je vnútorná sila, ktorá nás poháňa vpred, aj keď čelíme výzvam a neúspechom. Je to o tom, že sa nevzdávame, aj keď je to ťažké, a pokračujeme v úsilí, kým nedosiahneme svoje ciele. Odhodlanie je kľúčové pre dosiahnutie veľkých vecí v živote a pre prekonávanie prekážok. Je to vlastnosť, ktorá nás robí odolnými a úspešnými.",
+                "Vedomosti sú moc. Od získavania vedomostí a učenia sa, cez zdieľanie informácií a kritické myslenie, až po múdrosť a pochopenie. Vedomosti nám otvárajú dvere k novým možnostiam. Vedomosti nám umožňujú robiť informované rozhodnutia, riešiť problémy a porozumieť svetu okolo nás. Sú základom pre osobný rast, profesionálny úspech a spoločenský pokrok. Zdieľanie vedomostí a otvorený prístup k informáciám sú kľúčové pre budovanie vzdelanej a inovatívnej spoločnosti. Vedomosti sú nekonečným zdrojom inšpirácie a rastu.",
+                "Rast je neustály proces. Od osobného rastu a rozvoja, cez profesionálny rast a učenie sa, až po rast podnikov a spoločností. Rast nám pomáha dosahovať náš plný potenciál. Rast je o neustálom zlepšovaní, učení sa z chýb a hľadaní nových príležitostí. Je to dynamický proces, ktorý si vyžaduje otvorenú myseľ, flexibilitu a odhodlanie. Rast nám umožňuje prispôsobovať sa meniacemu sa svetu, prekonávať výzvy a dosahovať nové úrovne úspechu a naplnenia. Je to cesta, nie cieľ, a je dôležité si užívať každý krok.",
+                "Krása je všade okolo nás. Od prírodných krás a umeleckých diel, cez ľudskú krásu a vnútornú krásu, až po estetiku a harmóniu. Krása nás inšpiruje a obohacuje náš život. Krása môže byť nájdená v jednoduchých veciach, ako je kvet, pieseň alebo úsmev. Je to subjektívne, ale má silu nás povzniesť a inšpirovať. Ocenenie krásy nám pomáha vidieť svet pozitívnejšie a nájsť radosť v každodennom živote. Krása je univerzálny jazyk, ktorý prekračuje hranice a spája ľudí po celom svete.",
+                "Pokora je cnosť. Od uznania vlastných obmedzení a učenia sa od iných, cez vďačnosť a skromnosť, až po otvorenosť a rast. Pokora nám pomáha rásť a zlepšovať sa. Pokora neznamená slabosť, ale skôr silu a múdrosť. Umožňuje nám učiť sa z chýb, prijímať spätnú väzbu a neustále sa zdokonaľovať. Pokora je kľúčová pre budovanie silných vzťahov a pre úspech v živote. Je to vlastnosť, ktorá nás robí prístupnejšími, empatickejšími a múdrejšími.",
+                "Inšpirácia je iskra. Od inšpirácie prírodou a umením, cez inšpiráciu ľuďmi a príbehmi, až po inšpiráciu nápadmi a cieľmi. Inšpirácia nás motivuje k tvorbe. Inšpirácia môže prísť z nečakaných zdrojov a má silu nás poháňať vpred. Je to pocit, ktorý nás napĺňa energiou a nadšením. Inšpirácia nám pomáha objavovať nové nápady, prekonávať prekážky a dosahovať veci, o ktorých sme si mysleli, že sú nemožné. Je to dar, ktorý nás vedie k rastu a naplneniu.",
+                "Objavovanie je cesta. Od objavovania nových miest a kultúr, cez objavovanie nových vedomostí a nápadov, až po objavovanie seba a svojho potenciálu. Objavovanie nás obohacuje. Objavovanie je o zvedavosti, experimentovaní a ochote vystúpiť z komfortnej zóny. Je to proces, ktorý nám prináša nové skúsenosti, vedomosti a perspektívy. Objavovanie nás učí o svete a o sebe samých, pomáha nám rásť a rozvíjať sa. Je to nekonečná cesta, ktorá nás vedie k novým dobrodružstvám a objavom.",
+                "Rozmanitosť je sila. Od rozmanitosti kultúr a názorov, cez rozmanitosť myšlienok a prístupov, až po rozmanitosť talentov a schopností. Rozmanitosť nás obohacuje a posilňuje. Rozmanitosť prináša rôzne perspektívy, skúsenosti a nápady, ktoré vedú k inováciám a lepším riešeniam. Je to základ pre inkluzívnu a spravodlivú spoločnosť, kde je každý rešpektovaný a oceňovaný. Rozmanitosť nám pomáha učiť sa od seba navzájom, prekonávať predsudky a budovať silnejšie komunity. Je to hodnota, ktorú by sme mali všetci oslavovať a podporovať.",
+                "Spomienky sú poklad. Od detských spomienok a rodinných zážitkov, cez cestovateľské zážitky a priateľstvá, až po dôležité udalosti a míľniky. Spomienky nás spájajú s minulosťou. Spomienky nám umožňujú prežiť minulé okamihy, učiť sa z nich a tešiť sa z nich. Sú dôležité pre našu identitu a pre budovanie silných vzťahov. Spomienky môžu byť radostné, ale aj bolestivé, a je dôležité ich spracovať a poučiť sa z nich. Sú to príbehy nášho života, ktoré nás formujú a inšpirujú.",
+                "Budúcnosť je otvorená. Od plánovania budúcnosti a stanovovania cieľov, cez adaptáciu na zmeny a prijímanie výziev, až po optimizmus a nádej. Budúcnosť je v našich rukách. Budúcnosť je neistá, ale zároveň plná možností. Naše činy v prítomnosti formujú budúcnosť, ktorú vytvárame. Je dôležité byť proaktívny, učiť sa z minulosti a pracovať na lepšej budúcnosti pre všetkých. Budúcnosť si vyžaduje odvahu, víziu a spoluprácu. Je to plátno, na ktoré môžeme maľovať svoje sny a ambície, a je len na nás, ako ho využijeme."
+            ];
+
+            // --- Funkcionalita chatu ---
+            sendButton.addEventListener('click', sendMessage);
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            /**
+             * Odošle správu používateľa do chatovacieho okna a simuluje odpoveď AI.
+             */
+            function sendMessage() {
+                const messageText = userInput.value.trim();
+                if (messageText === '') return; // Ak je správa prázdna, nič nerobiť
+
+                // Kontrola, či je používateľ zablokovaný
+                if (Date.now() < blockedUntil) {
+                    const remainingTimeSeconds = Math.ceil((blockedUntil - Date.now()) / 1000);
+                    const minutes = Math.floor(remainingTimeSeconds / 60);
+                    const seconds = remainingTimeSeconds % 60;
+                    displayAIResponse(`Prepáčte, ste dočasne zablokovaný. Skúste to znova o ${minutes} minút a ${seconds} sekúnd.`, 'text', '');
+                    userInput.value = ''; // Vyčistiť vstup aj keď je zablokovaný
+                    return;
+                }
+
+                // Výpočet počtu slov
+                const words = messageText.split(/\s+/).filter(word => word.length > 0);
+                if (words.length > maxWordsPerMessage) {
+                    blockedUntil = Date.now() + blockDuration;
+                    displayAIResponse(`Vaša správa presahuje limit ${maxWordsPerMessage} slov. Boli ste zablokovaný na 1 hodinu.`, 'text', '');
+                    userInput.value = ''; // Vyčistiť vstup
+                    return; // Zastaviť spracovanie tejto správy
+                }
+
+                // Pridanie správy používateľa do okna chatu
+                const userMessageDiv = document.createElement('div');
+                userMessageDiv.classList.add('message', 'user-message');
+                userMessageDiv.innerHTML = `<p>${messageText}</p>`;
+                chatWindow.appendChild(userMessageDiv);
+
+                // Posun na spodok chatu
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                // Vyčistenie vstupného poľa
+                userInput.value = '';
+
+                // Simulácia odpovede AI
+                simulateAIResponse(messageText);
+            }
+
+            /**
+             * Zobrazí odpoveď AI v chatovacom okne.
+             * @param {string} responseText - Text odpovede AI.
+             * @param {string} [contentType='text'] - Typ obsahu ('text', 'image', 'code').
+             * @param {string} [contentValue=''] - Hodnota obsahu (URL obrázka, kód).
+             */
+            function displayAIResponse(responseText, contentType = 'text', contentValue = '') {
+                setTimeout(() => {
+                    const aiMessageDiv = document.createElement('div');
+                    aiMessageDiv.classList.add('message', 'ai-message');
+
+                    let contentHtml = `<p>${responseText}</p>`;
+                    if (contentType === 'image' && contentValue) {
+                        contentHtml += `<img src="${contentValue}" alt="Vygenerovaný obrázok" style="max-width: 250px; height: auto; margin-top: 10px; border-radius: 5px;">`;
+                    } else if (contentType === 'code' && contentValue) {
+                        contentHtml += `<pre style="margin-top: 10px; background-color: #1e1e2e; padding: 10px; border-radius: 5px; overflow-x: auto;"><code class="language-lua">${contentValue}</code></pre>`;
+                    }
+                    aiMessageDiv.innerHTML = contentHtml;
+                    chatWindow.appendChild(aiMessageDiv);
+                    chatWindow.scrollTop = chatWindow.scrollHeight;
+                }, 500); // Krátka pauza po odstránení načítania
+            }
+
+            /**
+             * Simuluje odpoveď AI na základe správy používateľa, vrátane generovania obrázkov a kódu.
+             * @param {string} userMessage - Správa od používateľa.
+             */
+            async function simulateAIResponse(userMessage) {
+                let aiResponse = "Prepáčte, nerozumiem. Môžete to preformulovať?";
+                let contentType = 'text';
+                let contentValue = '';
+                const lowerCaseMessage = userMessage.toLowerCase();
+
+                // Pridanie indikátora načítania
+                const loadingMessageDiv = document.createElement('div');
+                loadingMessageDiv.classList.add('message', 'ai-message');
+                loadingMessageDiv.id = 'loading-message';
+                loadingMessageDiv.innerHTML = `<p>AI píše...</p>`;
+                chatWindow.appendChild(loadingMessageDiv);
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+
+                // Odstránenie indikátora načítania funkcia
+                const removeLoadingMessage = () => {
+                    if (loadingMessageDiv && chatWindow.contains(loadingMessageDiv)) {
+                        chatWindow.removeChild(loadingMessageDiv);
+                    }
+                };
+
+                // --- Rozpoznávanie zámeru a spracovanie ---
+                // Prioritné hardcoded odpovede
+                if (lowerCaseMessage.includes("ahoj") || lowerCaseMessage.includes("cau") || lowerCaseMessage.includes("dobrý deň")) {
+                    aiResponse = "Ahoj! Som AI simulátor. Ako ti dnes môžem pomôcť? Chceš generovať fotky, kód alebo sa porozprávať?";
+                } else if (lowerCaseMessage.includes("ako sa mas") || lowerCaseMessage.includes("ako sa máte")) {
+                    aiResponse = "Som len program, takže sa nemám ako mať, ale som pripravený ti pomôcť!";
+                } else if (lowerCaseMessage.includes("ďakujem") || lowerCaseMessage.includes("dakujem")) {
+                    aiResponse = "Nemáš za čo! Som tu, aby som ti pomohol.";
+                } else if (lowerCaseMessage.includes("čo vieš") || lowerCaseMessage.includes("čo dokážeš")) {
+                    aiResponse = "Dokážem generovať herné fotky a Roblox Lua kód na základe tvojho popisu. Tiež sa s tebou môžem porozprávať na rôzne témy. Skús sa ma niečo spýtať!";
+                } else if (lowerCaseMessage.includes("hlavné mesto slovenska")) {
+                    aiResponse = "Hlavné mesto Slovenska je **Bratislava**. Leží na rieke Dunaj a je zároveň najväčším mestom Slovenska.";
+                }
+                // --- Generovanie obrázkov (rozšírené rozpoznávanie) ---
+                else if (
+                    lowerCaseMessage.includes("vygeneruj fotku") || lowerCaseMessage.includes("obrázok") || lowerCaseMessage.includes("fotka") ||
+                    lowerCaseMessage.includes("drak") || lowerCaseMessage.includes("vesmírna loď") || lowerCaseMessage.includes("hrad") ||
+                    lowerCaseMessage.includes("les") || lowerCaseMessage.includes("fantasy") || lowerCaseMessage.includes("sci-fi") ||
+                    lowerCaseMessage.includes("boj") || lowerCaseMessage.includes("magický") || lowerCaseMessage.includes("mesto") ||
+                    lowerCaseMessage.includes("robot") || lowerCaseMessage.includes("auto") || lowerCaseMessage.includes("príroda") ||
+                    lowerCaseMessage.includes("mníška") || lowerCaseMessage.includes("kostlivec") || lowerCaseMessage.includes("horor") ||
+                    lowerCaseMessage.includes("tmavý koridor") || lowerCaseMessage.includes("sviečky") || lowerCaseMessage.includes("strašidelný")
+                ) {
+                    const imagePromptText = userMessage.replace(/(?:vygeneruj|ukáž|urob|chcem)\s+(?:fotku|obrázok|fotku|obrázok)\s*/, '').trim();
+                    if (imagePromptText) {
+                        aiResponse = `Generujem fotku pre "${imagePromptText}"...`;
+                        contentType = 'image';
+                        contentValue = await generateImage(imagePromptText); // Získanie URL obrázka
+                    } else {
+                        aiResponse = "Prosím, zadaj popis pre fotku, ktorú chceš vygenerovať (napr. 'vygeneruj fotku draka').";
+                    }
+                }
+                // --- Generovanie kódu (rozšírené rozpoznávanie) ---
+                else if (
+                    lowerCaseMessage.includes("vygeneruj kód") || lowerCaseMessage.includes("napíš kód") || lowerCaseMessage.includes("skript") ||
+                    lowerCaseMessage.includes("roblox kód") || lowerCaseMessage.includes("funkcia") || lowerCaseMessage.includes("slučka") ||
+                    lowerCaseMessage.includes("npc") || lowerCaseMessage.includes("teleport") || lowerCaseMessage.includes("udalosť") ||
+                    lowerCaseMessage.includes("hráč") || lowerCaseMessage.includes("časovač")
+                ) {
+                    const codePromptText = userMessage.replace(/(?:vygeneruj|napíš)\s+(?:kód|skript|roblox kód)\s*/, '').trim();
+                    if (codePromptText) {
+                        aiResponse = `Generujem Roblox Lua kód pre "${codePromptText}"...`;
+                        contentType = 'code';
+                        contentValue = await generateRobloxCode(codePromptText); // Získanie kódu
+                    } else {
+                        aiResponse = "Prosím, zadaj popis pre kód, ktorý chceš vygenerovať (napr. 'napíš kód pre NPC, ktoré sleduje hráča').";
+                    }
+                }
+                // --- Dynamická odpoveď cez API (ak nie je simulovaná) ---
+                else if (!useSimulatedResponses) {
+                    try {
+                        const chatHistory = [];
+                        chatHistory.push({ role: "user", parts: [{ text: userMessage }] });
+                        const payload = { contents: chatHistory };
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            console.error("Gemini API HTTP Error:", response.status, response.statusText);
+                            const errorText = await response.text();
+                            console.error("Gemini API Error Body:", errorText);
+                            aiResponse = `Prepáčte, momentálne nemôžem odpovedať na túto otázku. Skúste to prosím neskôr.`;
+                        } else {
+                            const result = await response.json();
+                            console.log("Gemini API Result:", result);
+
+                            if (result.candidates && result.candidates.length > 0 &&
+                                result.candidates[0].content && result.candidates[0].content.parts &&
+                                result.candidates[0].content.parts.length > 0) {
+                                const generatedText = result.candidates[0].content.parts[0].text;
+                                if (generatedText.trim().length > 0) {
+                                    aiResponse = generatedText;
+                                } else {
+                                    aiResponse = "Prepáč, AI vygenerovala prázdnu odpoveď. Skús to prosím preformulovať.";
+                                }
+                            } else if (result.promptFeedback && result.promptFeedback.blockReason) {
+                                aiResponse = `Prepáčte, nemôžem odpovedať na túto otázku z dôvodu bezpečnostných pravidiel.`;
+                            } else {
+                                aiResponse = "Prepáč, nepodarilo sa mi vygenerovať zmysluplnú odpoveď. Skús to prosím preformulovať.";
+                            }
+                        }
+                    } catch (error) {
+                        console.error("Chyba pri volaní Gemini API pre chat:", error);
+                        aiResponse = "Nastala chyba pri komunikácii s AI. Skúste to prosím neskôr, alebo sa ma spýtajte niečo jednoduchšie.";
+                    }
+                }
+                // --- Záložná simulovaná odpoveď (ak je simulovaná a žiadna iná podmienka nesedí) ---
+                else {
+                    // Ak žiadne špecifické kľúčové slovo nesedí, vyberie náhodnú dlhú odpoveď
+                    if (longResponses.length > 0) {
+                        aiResponse = longResponses[Math.floor(Math.random() * longResponses.length)];
+                    } else {
+                        aiResponse = "Zaujímavá otázka! Momentálne nemám pripravenú odpoveď na túto tému. Skús sa ma opýtať niečo iné, požiadaj o fotku, alebo kód.";
+                    }
+                }
+
+
+                removeLoadingMessage(); // Odstránenie indikátora načítania
+
+                // Zobrazenie odpovede AI s prípadným obrázkom/kódom
+                displayAIResponse(aiResponse, contentType, contentValue);
+            }
+
+            /**
+             * Generuje obrázok na základe popisu používateľa.
+             * Vracia URL obrázka alebo prázdny reťazec v prípade chyby.
+             * @param {string} promptText - Popis obrázka.
+             * @returns {Promise<string>} URL obrázka (base64) alebo prázdny reťazec.
+             */
+            async function generateImage(promptText) {
+                if (useSimulatedResponses) {
+                    // Placeholder pre strašidelnú mníšku/kostlivca
+                    if (promptText.includes("mníška") || promptText.includes("kostlivec") || promptText.includes("horor") || promptText.includes("strašidelný")) {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                // URL pre obrázok strašidelnej mníšky, ktorý ste poslali
+                                resolve('https://placehold.co/400x250/1a1a2e/e0e0e0?text=Hororová+Mníška'); // Prispôsobený placeholder
+                            }, 2000);
+                        });
+                    }
+
+                    const imageUrls = [
+                        'https://placehold.co/400x250/000000/FFFFFF?text=Fantasy+Dragon',
+                        'https://placehold.co/400x250/000000/FFFFFF?text=Sci-Fi+Spacecraft',
+                        'https://placehold.co/400x250/000000/FFFFFF?text=Medieval+Knight',
+                        'https://placehold.co/400x250/000000/FFFFFF?text=Cyberpunk+City',
+                        'https://placehold.co/400x250/000000/FFFFFF?text=Epic+Battle',
+                        'https://placehold.co/400x250/000000/FFFFFF?text=Magical+Forest'
+                    ];
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            const randomImageUrl = imageUrls[Math.floor(Math.random() * imageUrls.length)];
+                            resolve(randomImageUrl);
+                        }, 2000); // Simulácia času generovania
+                    });
+                } else {
+                    try {
+                        const payload = { instances: { prompt: promptText }, parameters: { "sampleCount": 1} };
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            console.error("Imagen API HTTP Error:", response.status, response.statusText);
+                            const errorText = await response.text();
+                            console.error("Imagen API Error Body:", errorText);
+                            return ''; // Vráti prázdny reťazec pri chybe
+                        }
+
+                        const result = await response.json();
+                        console.log("Imagen API Result:", result);
+
+                        if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                            return `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                        } else {
+                            console.error("Imagen API: No image generated or invalid response structure.");
+                            return '';
+                        }
+                    } catch (error) {
+                        console.error("Chyba pri volaní Imagen API pre obrázok:", error);
+                        return '';
+                    }
+                }
+            }
+
+            /**
+             * Generuje Roblox Lua kód na základe popisu používateľa.
+             * Vracia reťazec kódu alebo prázdny reťazec v prípade chyby.
+             * @param {string} promptText - Popis kódu.
+             * @returns {Promise<string>} Generovaný kód alebo prázdny reťazec.
+             */
+            async function generateRobloxCode(promptText) {
+                if (useSimulatedResponses) {
+                    // Simulovaný kód pre NPC, ktoré sleduje hráča (z predchádzajúcej konverzácie)
+                    if (promptText.includes("npc") && promptText.includes("sleduje hráča")) {
+                        return new Promise(resolve => {
+                            setTimeout(() => {
+                                resolve(`-- Simulovaný Roblox Lua kód pre NPC, ktoré sleduje hráča
+local npc = script.Parent
+local humanoid = npc:WaitForChild("Humanoid")
+local hrp = npc:WaitForChild("HumanoidRootPart")
+local PathfindingService = game:GetService("PathfindingService")
+local Players = game:GetService("Players")
+
+local chasingPlayer = nil
+
+local function getClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = math.huge
+    for _, player in pairs(Players:GetPlayers()) do
+        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            local dist = (hrp.Position - player.Character.HumanoidRootPart.Position).Magnitude
+            if dist < shortestDistance and dist < 60 then
+                shortestDistance = dist
+                closestPlayer = player
+            end
+        end
+    end
+    return closestPlayer
+end
+
+local function followPlayer(targetPlayer)
+    if not targetPlayer.Character then return end
+    local targetHRP = targetPlayer.Character:FindFirstChild("HumanoidRootPart")
+    if not targetHRP then return end
+    humanoid:MoveTo(targetHRP.Position)
+end
+
+while true do
+    local player = getClosestPlayer()
+    if player then
+        chasingPlayer = player
+        followPlayer(chasingPlayer)
+    else
+        humanoid:MoveTo(hrp.Position) -- zastav, keď nikto nie je blízko
+        chasingPlayer = nil
+    end
+    wait(0.5)
+end`);
+                            }, 2000);
+                        });
+                    }
+
+                    const simulatedCodes = [
+                        `-- Simulovaný Roblox Lua kód pre jednoduchý teleport
+local part = script.Parent
+local teleportTo = Vector3.new(0, 100, 0) -- Cieľová pozícia
+
+part.Touched:Connect(function(hit)
+    local player = game.Players:GetPlayerFromCharacter(hit.Parent)
+    if player and player.Character then
+        player.Character:SetPrimaryPartCFrame(CFrame.new(teleportTo))
+    end
+end)`,
+                        `-- Simulovaný Roblox Lua kód pre počítadlo kliknutí
+local clickDetector = script.Parent:WaitForChild("ClickDetector")
+local counter = 0
+local textLabel = script.Parent:WaitForChild("SurfaceGui"):WaitForChild("TextLabel")
+
+clickDetector.MouseClick:Connect(function()
+    counter = counter + 1
+    textLabel.Text = "Kliknutí: " .. counter
+end)`
+                    ];
+                    return new Promise(resolve => {
+                        setTimeout(() => {
+                            const randomCode = simulatedCodes[Math.floor(Math.random() * simulatedCodes.length)];
+                            resolve(randomCode);
+                        }, 2000); // Simulácia času generovania
+                    });
+                } else {
+                    try {
+                        const chatHistory = [];
+                        chatHistory.push({ role: "user", parts: [{ text: `Vygeneruj Roblox Lua kód pre: ${promptText}. Kód by mal byť kompletný a pripravený na použitie v Roblox Studio.` }] });
+                        const payload = { contents: chatHistory };
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+
+                        if (!response.ok) {
+                            console.error("Gemini Code API HTTP Error:", response.status, response.statusText);
+                            const errorText = await response.text();
+                            console.error("Gemini Code API Error Body:", errorText);
+                            return '';
+                        }
+
+                        const result = await response.json();
+                        console.log("Gemini Code API Result:", result);
+
+                        if (result.candidates && result.candidates.length > 0 &&
+                            result.candidates[0].content && result.candidates[0].content.parts &&
+                            result.candidates[0].content.parts.length > 0) {
+                            const generatedText = result.candidates[0].content.parts[0].text;
+                            const cleanedCode = generatedText.replace(/```lua\n?|```/g, '').trim();
+                            return cleanedCode;
+                        } else if (result.promptFeedback && result.promptFeedback.blockReason) {
+                            console.warn("Gemini Code API: Content blocked due to safety reasons.");
+                            return '';
+                        } else {
+                            console.error("Gemini Code API: No code generated or invalid response structure.");
+                            return '';
+                        }
+                    } catch (error) {
+                        console.error("Chyba pri volaní Gemini API pre kód:", error);
+                        return '';
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
