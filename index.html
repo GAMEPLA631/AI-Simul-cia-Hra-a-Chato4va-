@@ -190,6 +190,130 @@
             display: block; /* Umožní zalamovanie riadkov v pre */
         }
 
+        /* Sekcia prémií */
+        .premium-section {
+            background-color: #3a3a5a;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+            margin-top: 30px; /* Priestor od chatu */
+            text-align: center;
+        }
+
+        .premium-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .premium-card {
+            background-color: #2b2b4b;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .premium-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .premium-card h3 {
+            color: #bd93f9;
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .premium-card .price {
+            font-size: 28px;
+            font-weight: bold;
+            color: #50fa7b;
+            margin-bottom: 15px;
+        }
+
+        .premium-card p {
+            font-size: 14px;
+            color: #e0e0e0;
+            margin-bottom: 20px;
+            flex-grow: 1; /* Aby popisy mali rovnakú výšku */
+        }
+
+        .premium-card button {
+            background-color: #8be9fd;
+            color: #1a1a2e;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .premium-card button:hover {
+            background-color: #50fa7b;
+        }
+
+        /* Modal štýly */
+        .modal {
+            display: none; /* Skryté predvolene */
+            position: fixed; /* Zostane na mieste aj pri scrollovaní */
+            z-index: 100; /* Nad všetkým */
+            left: 0;
+            top: 0;
+            width: 100%; /* Celá šírka */
+            height: 100%; /* Celá výška */
+            overflow: auto; /* Povoliť scroll, ak je obsah príliš veľký */
+            background-color: rgba(0, 0, 0, 0.7); /* Tmavé pozadie s priehľadnosťou */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #2a2a4a;
+            margin: auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            color: #e0e0e0;
+        }
+
+        .modal-content h3 {
+            color: #8be9fd;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+
+        .modal-content p {
+            margin-bottom: 25px;
+            font-size: 16px;
+        }
+
+        .modal-close-button {
+            background-color: #8be9fd;
+            color: #1a1a2e;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+        }
+
+        .modal-close-button:hover {
+            background-color: #50fa7b;
+        }
+
         /* Responzívne úpravy pre menšie obrazovky */
         @media (max-width: 768px) {
             body {
@@ -212,6 +336,12 @@
             }
             .chat-input button {
                 width: 100%;
+            }
+            .premium-grid {
+                grid-template-columns: 1fr; /* Jeden stĺpec na mobiloch */
+            }
+            .modal-content {
+                width: 90%;
             }
         }
     </style>
@@ -247,6 +377,55 @@
                     <button id="send-button">Odoslať</button>
                 </div>
             </section>
+
+            <!-- Nová sekcia pre Premium AI -->
+            <section class="premium-section">
+                <h2>Premium AI – Odomknite Plný Potenciál</h2>
+                <p>Prejdite na prémiové balíky a získajte prístup k exkluzívnym funkciám, neobmedzeným možnostiam a pokročilým schopnostiam AI!</p>
+
+                <div class="premium-grid">
+                    <!-- Premium Karta 1 -->
+                    <div class="premium-card">
+                        <h3>AI Premium Mini</h3>
+                        <div class="price">35.00€</div>
+                        <p>Vylepšite si chat s AI o rozšírené konverzačné schopnosti a prístup k vybraným témam. Ideálne pre občasných používateľov, ktorí chcú viac.</p>
+                        <button class="buy-premium-button" data-package-name="AI Premium Mini" data-price="35.00€">Kúpiť Mini</button>
+                    </div>
+
+                    <!-- Premium Karta 2 -->
+                    <div class="premium-card">
+                        <h3>AI Premium Základ</h3>
+                        <div class="price">85.22€</div>
+                        <p>Odomknite rozšírené funkcie chatu a rýchlejšie generovanie obrázkov. Získajte prístup k širšej databáze vedomostí pre komplexnejšie odpovede.</p>
+                        <button class="buy-premium-button" data-package-name="AI Premium Základ" data-price="85.22€">Kúpiť Základ</button>
+                    </div>
+
+                    <!-- Premium Karta 3 -->
+                    <div class="premium-card">
+                        <h3>AI Premium Pro</h3>
+                        <div class="price">109.99€</div>
+                        <p>Všetko zo Základného balíka plus pokročilé možnosti generovania kódu a prístup k exkluzívnym herným fotkám. Prioritná podpora a skorý prístup k novým funkciám.</p>
+                        <button class="buy-premium-button" data-package-name="AI Premium Pro" data-price="109.99€">Kúpiť Pro</button>
+                    </div>
+
+                    <!-- Premium Karta 4 -->
+                    <div class="premium-card">
+                        <h3>AI Premium Plus</h3>
+                        <div class="price">189.22€</div>
+                        <p>Najkomplexnejší balík. Získajte neobmedzený prístup ku všetkým funkciám AI, vrátane špeciálizovaných modulov pre hĺbkovú analýzu, tvorbu obsahu a prediktívne modelovanie. Vaša AI bude skutočne vedieť "všetko" a prispôsobí sa vašim najnáročnejším požiadavkám. Exkluzívna 24/7 podpora a personalizované tréningové moduly.</p>
+                        <button class="buy-premium-button" data-package-name="AI Premium Plus" data-price="189.22€">Kúpiť Plus</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <!-- Modal pre potvrdenie nákupu -->
+    <div id="purchase-modal" class="modal">
+        <div class="modal-content">
+            <h3 id="modal-title"></h3>
+            <p id="modal-message"></p>
+            <button id="modal-close-button" class="modal-close-button">Zavrieť</button>
         </div>
     </div>
 
@@ -255,6 +434,11 @@
             const chatWindow = document.getElementById('chat-window');
             const userInput = document.getElementById('user-input');
             const sendButton = document.getElementById('send-button');
+            const buyButtons = document.querySelectorAll('.buy-premium-button'); // Všetky tlačidlá "Kúpiť"
+            const purchaseModal = document.getElementById('purchase-modal');
+            const modalTitle = document.getElementById('modal-title');
+            const modalMessage = document.getElementById('modal-message');
+            const modalCloseButton = document.getElementById('modal-close-button');
 
             // Kontrola, či je API kľúč k dispozícii v prostredí Canvasu
             // Ak nie je, použijeme simulované odpovede pre všetky funkcie (chat, obrázky, kód)
@@ -757,6 +941,38 @@ end)`
                         return '';
                     }
                 }
+            }
+
+            // --- Funkcionalita nákupu prémiových balíkov ---
+            buyButtons.forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const packageName = event.target.dataset.packageName;
+                    const price = event.target.dataset.price;
+                    showPurchaseConfirmation(packageName, price);
+                });
+            });
+
+            // Zavrieť modal po kliknutí na tlačidlo "Zavrieť"
+            modalCloseButton.addEventListener('click', () => {
+                purchaseModal.style.display = 'none';
+            });
+
+            // Zavrieť modal po kliknutí mimo obsahu modalu
+            purchaseModal.addEventListener('click', (event) => {
+                if (event.target === purchaseModal) {
+                    purchaseModal.style.display = 'none';
+                }
+            });
+
+            /**
+             * Zobrazí modal s potvrdením nákupu.
+             * @param {string} packageName - Názov zakúpeného balíka.
+             * @param {string} price - Cena balíka.
+             */
+            function showPurchaseConfirmation(packageName, price) {
+                modalTitle.textContent = `Potvrdenie nákupu: ${packageName}`;
+                modalMessage.textContent = `Ďakujeme za váš nákup! Balík ${packageName} za ${price} bol úspešne aktivovaný. Užite si vylepšené AI funkcie!`;
+                purchaseModal.style.display = 'flex'; // Zobraziť modal
             }
         });
     </script>
